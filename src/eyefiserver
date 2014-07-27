@@ -54,6 +54,7 @@ import xml.dom.minidom
 from BaseHTTPServer import BaseHTTPRequestHandler
 import BaseHTTPServer
 import SocketServer
+import time
 
 # Default is to listen to all addresses on port 59278
 # Exemple: SERVER_ADDRESS = '127.0.0.1', 59278
@@ -687,12 +688,18 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
         use_date_from_file = self.server.config.getboolean(macaddress,
             'use_date_from_file', False)
 
+        correct_mtime = self.server.config.getboolean(macaddress,
+            'correct_mtime', True)
+
         # if needed, get reference date from the tar fragment
         # This is possible because the tar content is at the begining
         if use_date_from_file:
             tarinfo = imagetarfile.getmembers()[0]
             imageinfo = tarinfo.get_info(encoding=None, errors=None)
-            reference_date = datetime.fromtimestamp(imageinfo['mtime'])
+            if correct_mtime:
+                reference_date = datetime.utcfromtimestamp(imageinfo['mtime'])
+            else:
+                reference_date = datetime.fromtimestamp(imageinfo['mtime'])
         else:
             reference_date = datetime.now()
 
@@ -710,6 +717,11 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
         eyeFiLogger.debug("Extracting TAR file %s", tarpath)
         imagefilename = imagetarfile.getnames()[0]
         imagetarfile.extractall(path=upload_dir)
+
+        if correct_mtime:
+            corr_mtime = time.mktime(reference_date.timetuple())
+            os.utime(os.path.join(upload_dir, imagefilename),
+                (corr_mtime, corr_mtime))
 
         eyeFiLogger.debug("Closing TAR file %s", tarpath)
         imagetarfile.close()
