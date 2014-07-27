@@ -719,7 +719,14 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
 
         eyeFiLogger.debug("Extracting TAR file %s", tarpath)
         imagefilename = imagetarfile.getnames()[0]
-        imagetarfile.extractall(path=upload_dir)
+
+        extract_logs = self.server.config.getboolean(macaddress,
+            'extract_logs', False)
+
+        if extract_logs:
+            imagetarfile.extractall(path=upload_dir)
+        else:
+            imagetarfile.extract(imagefilename, path=upload_dir)
 
         if use_date_from_file and correct_mtime:
             corr_mtime = time.mktime(reference_date.timetuple())
