@@ -871,11 +871,11 @@ def main():
     """
     Main function
     """
-    parser = argparse.ArgumentParser(usage='%prog [options]')
+    parser = argparse.ArgumentParser(usage='%(prog)s [options]')
     parser.add_argument('--conf',
         action='append', dest='conffiles', metavar='CONFFILE',
         help='specific alternate location for configuration file. ' \
-           + 'default=%default',
+            + 'default=%(default)s',
         default=['/etc/eyefiserver.conf',
                  os.path.expanduser('~/eyefiserver.conf')])
     parser.add_argument('--log', dest='logfile',
