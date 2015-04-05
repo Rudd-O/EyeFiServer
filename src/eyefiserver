@@ -68,7 +68,7 @@ READ_CHUNK_SIZE = 10 * 1024
 PROGRESS_FREQUENCY = timedelta(0, 1)
 
 # The server HTTP header
-HTTP_SERVER_NAME = 'Eye-Fi Agent/2.0.4.0 (Windows XP SP2)'
+HTTP_SERVER_NAME = 'Eye-Fi Agent/ (Python)'
 
 # Format of log messages:
 LOG_FORMAT = '%(asctime)s %(levelname)s %(message)s'
@@ -458,6 +458,13 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
         self.send_eyefi_response(response)
 
 
+    def version_string(self):
+        """
+        Returns our customized Eye-Fi Agent name string
+        """
+        return HTTP_SERVER_NAME
+
+
     def send_eyefi_response(self, response):
         """
         Sends the response text to the connection in HTTP.
@@ -468,9 +475,7 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
             eyeFiLogger.info('Sending HTTP 500 error code')
         else:
             self.send_response(200)
-        self.send_header('Date', self.date_time_string())
         self.send_header('Pragma', 'no-cache')
-        self.send_header('Server', HTTP_SERVER_NAME)
         if response is None:
             self.send_header('Connection', 'Close')
             return
