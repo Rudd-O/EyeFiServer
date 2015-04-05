@@ -62,6 +62,14 @@ use_date_from_file
        upload_dir key might contain variable parts such as %Y%m%d, that are replaced by the datetime values.
 
        If use_date_from_file is On, the reference date will be the one the picture was taken rather than the transfer date.
+
+       Default is Off.
+correct_mtime  
+       This is only usefull is you activated use_date_from_file. This can be On or Off.
+
+       EyeFi puts local timestamp into its tarfile instead UTC, so extracted files get a wrong modification time.
+
+       Default is On, so that this behavior is corrected by default. You should not need to touch that value.
 integrity_verification  
        This can be On or Off.
 
