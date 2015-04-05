@@ -696,10 +696,13 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
         if use_date_from_file:
             tarinfo = imagetarfile.getmembers()[0]
             imageinfo = tarinfo.get_info(encoding=None, errors=None)
+            reference_date = datetime.fromtimestamp(imageinfo['mtime'])
             if correct_mtime:
-                reference_date = datetime.utcfromtimestamp(imageinfo['mtime'])
-            else:
-                reference_date = datetime.fromtimestamp(imageinfo['mtime'])
+                # The eyefi tar almost uses UTC, which is bad in itself.
+                # Moreover, it doesn't account for daylight saving so we can't
+                # use utcfromtimestamp and have to correct manually based on
+                # present offset to UTC.
+                reference_date += datetime.utcnow() - datetime.now()
         else:
             reference_date = datetime.now()
 
@@ -718,7 +721,7 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
         imagefilename = imagetarfile.getnames()[0]
         imagetarfile.extractall(path=upload_dir)
 
-        if correct_mtime:
+        if use_date_from_file and correct_mtime:
             corr_mtime = time.mktime(reference_date.timetuple())
             os.utime(os.path.join(upload_dir, imagefilename),
                 (corr_mtime, corr_mtime))
