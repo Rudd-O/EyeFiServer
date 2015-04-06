@@ -841,11 +841,11 @@ class EyeFiConfig(RawConfigParser):
         """
         # (re)set logger verbosity level
         loglevel = self.get(None, 'loglevel', 'DEBUG')
-        assert loglevel in \
-            ('DEBUG', 'INFO', 'WARN', 'WARNING', 'ERROR', 'FATAL'), \
-            'Error in conf file: Invalid loglevel'
-        loglevel = eval('logging.'+loglevel)
-        eyeFiLogger.setLevel(loglevel)
+        try:
+            eyeFiLogger.setLevel(loglevel)
+        except ValueError as err:
+            raise ValueError(
+                "Error while setting loglevel from conffile. "+err.message)
 
     def getuploaddir(self, macaddress, reference_date=None):
         """
