@@ -253,7 +253,7 @@ def build_soap_response(actionname, items):
     return doc.toxml(encoding="UTF-8")
 
 
-class EyeFiSession:
+class EyeFiSession(object):
     """
     Contains data for an HTTP session
     """
