@@ -84,18 +84,16 @@ LOG_FORMAT = '%(asctime)s %(levelname)s %(message)s'
 eyeFiLogger = logging.Logger("eyeFiLogger", logging.DEBUG)
 
 
-
 class IntegrityDigestFile(file):
     """
     Wrapper around file object
     All write() calls are used to compute a CRC the Eye-Fi way
     """
     def __init__(self, name, mode='r'):
-        file.__init__(self, name, mode )
+        file.__init__(self, name, mode)
         # Create an array of 2 byte integers
         self.concatenated_tcp_checksums = array.array('H')
-        self.todo_buffer = '' # bytes that weren't used yet
-
+        self.todo_buffer = ''  # bytes that weren't used yet
 
     def seek(self, position, whence=0):
         assert whence == 0, \
@@ -113,7 +111,6 @@ class IntegrityDigestFile(file):
                 "Failed to read %s bytes" % readsize
             self._diggestpush(buf)
             lefttoread -= readsize
-
 
     @staticmethod
     def calculate_tcp_checksum(buf):
@@ -138,9 +135,10 @@ class IntegrityDigestFile(file):
             sum_of_shorts = sum_of_shorts + int(ushort)
 
         # The sum at this point is probably a 32 bit integer. Take the left 16
-        # bits and the right 16 bites, interpret both as an integer of max value
-        # 2^16 and add them together. If the resulting value is still bigger
-        # than 2^16 then do it again until we get a value less than 16 bits.
+        # bits and the right 16 bites, interpret both as an integer of max
+        # value 2^16 and add them together. If the resulting value is still
+        # bigger than 2^16 then do it again until we get a value less than 16
+        # bits.
         while sum_of_shorts >> 16:
             sum_of_shorts = (sum_of_shorts >> 16) + (sum_of_shorts & 0xFFFF)
 
@@ -157,7 +155,7 @@ class IntegrityDigestFile(file):
         Push some bytes in the digest processing mechanism
         """
         self.todo_buffer += buf
-        while (len(self.todo_buffer) > 512):
+        while len(self.todo_buffer) > 512:
             tcp_checksum = self.calculate_tcp_checksum(self.todo_buffer[:512])
             self.concatenated_tcp_checksums.append(tcp_checksum)
             self.todo_buffer = self.todo_buffer[512:]
@@ -165,7 +163,6 @@ class IntegrityDigestFile(file):
     def write(self, buf):
         file.write(self, buf)
         self._diggestpush(buf)
-
 
     def getintegritydigest(self, uploadkey):
         """
@@ -190,13 +187,12 @@ class IntegrityDigestFile(file):
         return md5.hexdigest()
 
 
-
 class EyeFiContentHandler(xml.sax.handler.ContentHandler):
     "Eye Fi XML SAX ContentHandler"
 
     def __init__(self):
         xml.sax.handler.ContentHandler.__init__(self)
-        self.extracted_elements = {} # Where to put the extracted values
+        self.extracted_elements = {}  # Where to put the extracted values
         self.last_element_name = ''
 
     def startElement(self, name, attributes):
@@ -281,7 +277,6 @@ class EyeFiSession:
             result += "%04x" % (0xffff * random.random())
         return result
 
-
     @staticmethod
     def _hexmd5(plain):
         """
@@ -313,7 +308,6 @@ class EyeFiSession:
 
         return self._hexmd5(credentialstring)
 
-
     def getservercredential(self, config):
         """
         This is the GetPhotoStatus challenge:
@@ -333,7 +327,6 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
     """This class is responsible for handling HTTP requests passed to it.
     It implements the common HTTP method do_POST()"""
 
-
     def __init__(self, *args, **kargs):
         # We need a way to force self.close_connection:
         self.eyefi_close_connection = False
@@ -351,10 +344,11 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
         content_type = self.headers.get('content-type', '')
         if content_type.startswith('multipart/form-data'):
             # content-type header looks something like this
-            # multipart/form-data; boundary=---------------------------02468a...
+            # multipart/form-data; boundary=---------------------------02468a..
             multipart_boundary = content_type.split('=')[1].strip()
 
-            form = cgi.parse_multipart(StringIO(postdata),
+            form = cgi.parse_multipart(
+                StringIO(postdata),
                 {'boundary': multipart_boundary})
             eyeFiLogger.debug("Available multipart/form-data: %s", form.keys())
 
@@ -364,7 +358,6 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
             return form
         else:
             return {'SOAPENVELOPE': postdata}
-
 
     def do_POST(self):
         """
@@ -415,8 +408,7 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
                 return
 
             eyeFiLogger.info("Got request %s(%s)", soapaction, ", ".join(
-                    ["%s='%s'" % (key, value)
-                     for key, value in soapdata.items()]))
+                ["%s='%s'" % (key, value) for key, value in soapdata.items()]))
 
             if soapaction == 'StartSession':
                 # A soapaction of StartSession indicates the beginning of an
@@ -443,10 +435,9 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
             # If the URL is upload, the card is ready to send a picture to me
 
             eyeFiLogger.info("Got request UploadPhoto(%s)", ", ".join(
-                             ["%s='%s'" % (key, value)
-                              for key, value in soapdata.items()]))
+                ["%s='%s'" % (key, value) for key, value in soapdata.items()]))
 
-            tardata = splited_postdata['FILENAME'] # just the begining
+            tardata = splited_postdata['FILENAME']  # just the begining
 
             response = self.uploadPhoto(postdata, soapdata, tardata)
             eyeFiLogger.debug("Upload response: %s", response)
@@ -458,13 +449,11 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
 
         self.send_eyefi_response(response)
 
-
     def version_string(self):
         """
         Returns our customized Eye-Fi Agent name string
         """
         return HTTP_SERVER_NAME
-
 
     def send_eyefi_response(self, response):
         """
@@ -483,9 +472,9 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
 
         self.send_header('Content-Type', 'text/xml; charset="utf-8"')
         self.send_header('Content-Length', len(response))
-        if self.headers.get('Connection', '') == 'Keep-Alive' \
-         and response is not None \
-         and not self.eyefi_close_connection:
+        if (self.headers.get('Connection', '') == 'Keep-Alive'
+                and response is not None
+                and not self.eyefi_close_connection):
             self.send_header('Connection', 'Keep-Alive')
             eyeFiLogger.debug('Keeping connection alive')
         else:
@@ -497,18 +486,16 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(response)
         self.wfile.flush()
 
-
     def markLastPhotoInRoll(self, soapdata):
         "Handles MarkLastPhotoInRoll action"
 
         return build_soap_response('MarkLastPhotoInRollResponse', [])
 
-
     def uploadPhoto(self, postdata_fragment, soapdata, tardata):
         """
         Handles receiving the actual photograph from the card.
-        postdata_fragment will most likely contain multipart binary post data that needs to
-        be parsed.
+        postdata_fragment will most likely contain multipart binary post data
+        that needs to be parsed.
         """
         # Here, tardata is only the first bytes of tar file content
 
@@ -529,16 +516,16 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
                 os.makedirs(upload_tmpdir)
             except OSError as err:
                 # This is what you get when upload_dir is not writable.
-                eyeFiLogger.critical("Can't create directory. %s. "
-                                + "Do check write permissions.",
+                eyeFiLogger.critical(
+                    "Can't create directory. %s. Do check write permissions.",
                     err)
                 self.eyefi_close_connection = 1
                 return uploadphoto_response('false')
             eyeFiLogger.debug("Generated path %s", upload_tmpdir)
-            #if uid!=0 and gid!=0:
-            #    os.chown(upload_tmpdir, uid, gid)
-            #if mode!="":
-            #    os.chmod(upload_tmpdir, string.atoi(mode))
+            # if uid!=0 and gid!=0:
+            #     os.chown(upload_tmpdir, uid, gid)
+            # if mode!="":
+            #     os.chmod(upload_tmpdir, string.atoi(mode))
 
         tarpath = os.path.join(upload_tmpdir, self.session.filesignature)
         if os.path.exists(tarpath):
@@ -549,29 +536,27 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
             tarfilehandle = IntegrityDigestFile(tarpath, writemode)
         except IOError as err:
             # This is what you get when upload_dir is not writable.
-            eyeFiLogger.critical("Can't open file %s mode %s: %s. "
-                            + "Do check write permissions.",
+            eyeFiLogger.critical(
+                "Can't open file %s mode %s: %s. Do check write permissions.",
                 tarpath, writemode, err)
             self.eyefi_close_connection = 1
             return uploadphoto_response('false')
-        #if uid!=0 and gid!=0:
-        #    os.chown(tarpath, uid, gid)
-        #if mode!="":
-        #    os.chmod(tarpath, string.atoi(mode))
+        # if uid!=0 and gid!=0:
+        #     os.chown(tarpath, uid, gid)
+        # if mode!="":
+        #     os.chmod(tarpath, string.atoi(mode))
 
         eyeFiLogger.debug("Opened file %s for binary writing", tarpath)
 
-        tarfilehandle.seek(self.session.fileoffset) # seek in the file
-        tarsize = self.session.fileoffset # size allready there
-        tarfinalsize = int(soapdata['filesize']) # size to reach
+        tarfilehandle.seek(self.session.fileoffset)  # seek in the file
+        tarsize = self.session.fileoffset  # size allready there
+        tarfinalsize = int(soapdata['filesize'])  # size to reach
 
         tarfilehandle.write(tardata)
         tarsize += len(tardata)
 
-
-
         # Read remaining POST data
-        received_length = len(postdata_fragment) # size already read
+        received_length = len(postdata_fragment)  # size already read
         content_length = int(self.headers.get("content-length"))
         speedtest_starttime = datetime.utcnow()
         speedtest_startsize = received_length
@@ -607,19 +592,22 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
             except AttributeError:
                 isshutdown = False
             if isshutdown:
-                eyeFiLogger.error('Aborting file reception on shutdown request')
+                eyeFiLogger.error('Aborting file reception'
+                                  ' on shutdown request')
                 self.eyefi_close_connection = 1
                 return uploadphoto_response('false')
 
             if datetime.utcnow() - speedtest_starttime > PROGRESS_FREQUENCY:
                 elapsed_time = datetime.utcnow() - speedtest_starttime
 
-                elapsed_seconds = elapsed_time.days * 86400 \
-                                + elapsed_time.seconds \
-                                + elapsed_time.microseconds / 1000000.
+                elapsed_seconds = (
+                    elapsed_time.days * 86400
+                    + elapsed_time.seconds
+                    + elapsed_time.microseconds / 1000000.)
 
                 speed = (received_length-speedtest_startsize)/elapsed_seconds*8
-                eyeFiLogger.debug("%s: Read %s / %s bytes (%02.02f%%) %d kbps",
+                eyeFiLogger.debug(
+                    "%s: Read %s / %s bytes (%02.02f%%) %d kbps",
                     soapdata['filename'],
                     received_length,
                     content_length,
@@ -642,19 +630,18 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
                                       ' '.join(execute_cmd))
                     subprocess.Popen(execute_cmd)
 
-        #pike
-        #uid = self.server.config.getint('EyeFiServer', 'upload_uid')
-        #gid = self.server.config.getint('EyeFiServer', 'upload_gid')
-        #mode = self.server.config.get('EyeFiServer', 'upload_mode')
-        #eyeFiLogger.debug("Using uid/gid %d/%d"%(uid, gid))
-        #eyeFiLogger.debug("Using mode %s", mode)
+        # pike
+        # uid = self.server.config.getint('EyeFiServer', 'upload_uid')
+        # gid = self.server.config.getint('EyeFiServer', 'upload_gid')
+        # mode = self.server.config.get('EyeFiServer', 'upload_mode')
+        # eyeFiLogger.debug("Using uid/gid %d/%d"%(uid, gid))
+        # eyeFiLogger.debug("Using mode %s", mode)
 
         tarfilehandle.close()
         eyeFiLogger.debug("Closed file %s", tarpath)
 
-
         integrity_verification = self.server.config.getboolean(
-                macaddress, 'integrity_verification', True)
+            macaddress, 'integrity_verification', True)
 
         if integrity_verification:
             # Parse postdata_fragment to get INTEGRITYDIGEST key.
@@ -681,15 +668,14 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
                     os.remove(tarpath)
                     return uploadphoto_response('false')
 
-
         imagetarfile = tarfile.open(tarpath)
 
         # Get date_from_file flag
-        use_date_from_file = self.server.config.getboolean(macaddress,
-            'use_date_from_file', False)
+        use_date_from_file = self.server.config.getboolean(
+            macaddress, 'use_date_from_file', False)
 
-        correct_mtime = self.server.config.getboolean(macaddress,
-            'correct_mtime', True)
+        correct_mtime = self.server.config.getboolean(
+            macaddress, 'correct_mtime', True)
 
         # if needed, get reference date from the tar fragment
         # This is possible because the tar content is at the begining
@@ -706,16 +692,17 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
         else:
             reference_date = datetime.now()
 
-        upload_dir = self.server.config.getuploaddir(macaddress, reference_date)
+        upload_dir = self.server.config.getuploaddir(
+            macaddress, reference_date)
 
         # Check/create upload_dir
         if not os.path.isdir(upload_dir):
             os.makedirs(upload_dir)
             eyeFiLogger.debug("Generated path %s", upload_dir)
-            #if uid!=0 and gid!=0:
-            #    os.chown(upload_dir, uid, gid)
-            #if mode!="":
-            #    os.chmod(upload_dir, string.atoi(mode))
+            # if uid!=0 and gid!=0:
+            #     os.chown(upload_dir, uid, gid)
+            # if mode!="":
+            #     os.chmod(upload_dir, string.atoi(mode))
 
         eyeFiLogger.debug("Extracting TAR file %s", tarpath)
         imagefilename = imagetarfile.getnames()[0]
@@ -724,7 +711,7 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
         if use_date_from_file and correct_mtime:
             corr_mtime = time.mktime(reference_date.timetuple())
             os.utime(os.path.join(upload_dir, imagefilename),
-                (corr_mtime, corr_mtime))
+                     (corr_mtime, corr_mtime))
 
         eyeFiLogger.debug("Closing TAR file %s", tarpath)
         imagetarfile.close()
@@ -733,7 +720,8 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
         os.remove(tarpath)
 
         # Run a command on the file if specified
-        execute_cmd = self.server.config.get(macaddress, 'complete_execute', '')
+        execute_cmd = self.server.config.get(
+            macaddress, 'complete_execute', '')
         if execute_cmd:
             imagepath = os.path.join(upload_dir, imagefilename)
             eyeFiLogger.debug('Executing command "%s %s"',
@@ -742,22 +730,23 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
 
         return uploadphoto_response('true')
 
-
     def getPhotoStatus(self, soapdata):
         "Handles GetPhotoStatus action"
 
         macaddress = soapdata['macaddress']
         if self.session.macaddress != macaddress:
-            eyeFiLogger.error("GetPhotoStatus uses a macaddress [%s] " \
-               "different that session's one [%s]",
-               macaddress, self.session.macaddress)
+            eyeFiLogger.error(
+                "GetPhotoStatus uses a macaddress [%s] "
+                "different that session's one [%s]",
+                macaddress, self.session.macaddress)
             self.eyefi_close_connection = 1
             return None
 
         credential = self.session.getservercredential(self.server.config)
         if soapdata['credential'] != credential:
-            eyeFiLogger.error('GetPhotoStatus authentication failure:' \
-                "Received credential [%s] != [%s]",
+            eyeFiLogger.error(
+                'GetPhotoStatus authentication failure:'
+                'Received credential [%s] != [%s]',
                 soapdata['credential'], credential)
             self.eyefi_close_connection = 1
             return None
@@ -775,15 +764,14 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
             offset = 0
 
         # This is needed for integrity verification:
-        offset = offset - offset % 512 # Make align on a 512B block
+        offset = offset - offset % 512  # Make align on a 512B block
 
         self.session.fileoffset = offset
 
         return build_soap_response('GetPhotoStatusResponse', [
             ('fileid', '1'),
-            ('offset', offset), # How many bytes have already been transfered
+            ('offset', offset),  # How many bytes have already been transfered
             ])
-
 
     def startSession(self, soapdata):
         "Handle startSession requests"
@@ -813,17 +801,15 @@ class EyeFiConfig(RawConfigParser):
     def __init__(self, conffiles):
         RawConfigParser.__init__(self)
         self.conffiles = conffiles
-        self.read() # immediatly read files
-        self.setloglevel() # set log level
+        self.read()  # immediatly read files
+        self.setloglevel()  # set log level
         eyeFiLogger.info("Read config from %s", self.conffiles)
-
 
     def read(self, conffiles=None):
         if conffiles is not None:
             # changing conffiles list
             self.conffiles = conffiles
         RawConfigParser.read(self, self.conffiles)
-
 
     def get(self, macaddress, option, default=None):
         if macaddress:
@@ -835,20 +821,19 @@ class EyeFiConfig(RawConfigParser):
             return RawConfigParser.get(self, 'EyeFiServer', option)
         except (NoSectionError, NoOptionError):
             if default is None:
-                eyeFiLogger.error('You need to define key %s' \
-                    ' in your config file. See eyefiserver.conf(5)', option)
+                eyeFiLogger.error(
+                    'You need to define key %s in your config file.'
+                    ' See eyefiserver.conf(5)', option)
                 raise
         return default
-
 
     def getboolean(self, section, option, default=None):
         val = self.get(section, option, default)
         if isinstance(val, bool):
             return val
         if val.lower() not in self._boolean_states:
-            raise ValueError, 'Not a boolean: %s' % val
+            raise ValueError('Not a boolean: %s' % val)
         return self._boolean_states[val.lower()]
-
 
     def setloglevel(self):
         """
@@ -857,7 +842,7 @@ class EyeFiConfig(RawConfigParser):
         # (re)set logger verbosity level
         loglevel = self.get(None, 'loglevel', 'DEBUG')
         assert loglevel in \
-                ('DEBUG', 'INFO', 'WARN', 'WARNING', 'ERROR', 'FATAL'), \
+            ('DEBUG', 'INFO', 'WARN', 'WARNING', 'ERROR', 'FATAL'), \
             'Error in conf file: Invalid loglevel'
         loglevel = eval('logging.'+loglevel)
         eyeFiLogger.setLevel(loglevel)
@@ -872,7 +857,7 @@ class EyeFiConfig(RawConfigParser):
         the result is suitable for temporary files.
         """
         upload_dir = self.get(macaddress, 'upload_dir', '~/eyefi')
-        upload_dir = os.path.expanduser(upload_dir) # expands ~
+        upload_dir = os.path.expanduser(upload_dir)  # expands ~
 
         if reference_date is None:
             # Remove all the variable part from the dir, and use this as temp
@@ -887,18 +872,21 @@ class EyeFiConfig(RawConfigParser):
             upload_dir = reference_date.strftime(upload_dir)
             return upload_dir
 
+
 def main():
     """
     Main function
     """
     parser = argparse.ArgumentParser(usage='%(prog)s [options]')
-    parser.add_argument('--conf',
+    parser.add_argument(
+        '--conf',
         action='append', dest='conffiles', metavar='CONFFILE',
-        help='specific alternate location for configuration file. ' \
-            + 'default=%(default)s',
+        help='specific alternate location for configuration file. '
+             'default=%(default)s',
         default=['/etc/eyefiserver.conf',
                  os.path.expanduser('~/eyefiserver.conf')])
-    parser.add_argument('--log', dest='logfile',
+    parser.add_argument(
+        '--log', dest='logfile',
         help='log to file')
     options = parser.parse_args()
 
@@ -920,8 +908,8 @@ def main():
         eyeFiLogger.addHandler(filehandler)
 
     # run webserver as www-data - cant get it working
-    #if config.get('EyeFiServer', 'user_id')!='':
-    #    os.setuid(config.getint('EyeFiServer', 'user_id'))
+    # if config.get('EyeFiServer', 'user_id')!='':
+    #     os.setuid(config.getint('EyeFiServer', 'user_id'))
 
     def sighup_handler(signo, frm):
         """
@@ -930,7 +918,7 @@ def main():
         eyefiserver.config.read()
         eyefiserver.config.setloglevel()
         eyeFiLogger.info("Received SIGUP. Reloading config from %s",
-            eyefiserver.config.conffiles)
+                         eyefiserver.config.conffiles)
     signal.signal(signal.SIGHUP, sighup_handler)
 
     try:
@@ -945,8 +933,8 @@ def main():
             try:
                 eyefiserver.serve_forever()
             except select.error as err:
-                if err.args[0] == 4: # system call interrupted by SIGHUP
-                    pass # ignore it
+                if err.args[0] == 4:  # system call interrupted by SIGHUP
+                    pass  # ignore it
                 else:
                     raise
 
