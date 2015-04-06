@@ -749,7 +749,7 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
         macaddress = soapdata['macaddress']
         if self.session.macaddress != macaddress:
             eyeFiLogger.error("GetPhotoStatus uses a macaddress [%s] " \
-               "different that session's one [%]",
+               "different that session's one [%s]",
                macaddress, self.session.macaddress)
             self.eyefi_close_connection = 1
             return None
