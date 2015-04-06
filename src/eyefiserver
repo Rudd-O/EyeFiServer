@@ -30,31 +30,31 @@ class included with Python. I look for specific POST/GET request URLs and
 execute functions based on those URLs.
 """
 
-import sys
-import os
-import select
-import subprocess
-import signal
-from StringIO import StringIO
-import hashlib
-import binascii
-import struct
-import array
-import tarfile
-from datetime import datetime, timedelta
-from ConfigParser import RawConfigParser, NoSectionError, NoOptionError
-import re
 import argparse
-import cgi
-import logging
-import socket
-import random
-import xml.sax
-import xml.dom.minidom
-from BaseHTTPServer import BaseHTTPRequestHandler
+import array
 import BaseHTTPServer
+import binascii
+import cgi
+import hashlib
+import logging
+import os
+import random
+import re
+import select
+import signal
+import socket
 import SocketServer
+import struct
+import subprocess
+import sys
+import tarfile
 import time
+import xml.dom.minidom
+import xml.sax
+from BaseHTTPServer import BaseHTTPRequestHandler
+from ConfigParser import NoOptionError, NoSectionError, RawConfigParser
+from datetime import datetime, timedelta
+from StringIO import StringIO
 
 # Default is to listen to all addresses on port 59278
 # Exemple: SERVER_ADDRESS = '127.0.0.1', 59278
