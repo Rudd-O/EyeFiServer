@@ -877,16 +877,19 @@ def main():
     """
     Main function
     """
-    parser = argparse.ArgumentParser(usage='%(prog)s [options]')
+    parser = argparse.ArgumentParser(
+        description='An agent listening for Eye-Fi cards sending images',
+        usage='%(prog)s [options]')
     parser.add_argument(
-        '--conf',
-        action='append', dest='conffiles', metavar='CONFFILE',
+        '--conf', metavar='CONFFILE',
+        action='append', dest='conffiles',
         help='specific alternate location for configuration file. '
              'default=%(default)s',
         default=['/etc/eyefiserver.conf',
                  os.path.expanduser('~/eyefiserver.conf')])
     parser.add_argument(
-        '--log', dest='logfile',
+        '--log', metavar='LOGFILE',
+        dest='logfile',
         help='log to file')
     options = parser.parse_args()
 

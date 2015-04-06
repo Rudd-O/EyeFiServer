@@ -51,8 +51,8 @@ See manual for a full description of options.
 MAN PAGES
 ---------
 Man pages can be generated using txt2man utility:
-txt2man -t eyefiserver -r eyefiserver -s 1 -v "Executable programs or shell commands" -I file doc/eyefiserver.txt > doc/eyefiserver.1
-txt2man -t eyefiserver.conf -r eyefiserver -s 5 -v "File formats and conventions" doc/eyefiserver.conf.txt > doc/eyefiserver.conf.5
+txt2man -t eyefiserver -r "eyefiserver 2.3" -s 1 -v "Executable programs or shell commands" -I file doc/eyefiserver.txt > doc/eyefiserver.1
+txt2man -t eyefiserver.conf -r "eyefiserver 2.3" -s 5 -v "File formats and conventions" doc/eyefiserver.conf.txt > doc/eyefiserver.conf.5
 
 
 LICENSE
