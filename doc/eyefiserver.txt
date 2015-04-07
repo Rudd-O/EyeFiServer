@@ -23,6 +23,10 @@ DIAGNOSTICS
 You can increase log level up to DEBUG to get additional messages.
 See eyefiserver.conf(5).
 
+The logger doesn't catch exceptions from do_POST threads and such. So these
+errors are logged to stderr only, not in log files. You should avoid debuging
+while running as a daemon.
+
 FILES
 - /etc/eyefiserver.conf
 - ~/eyefiserver.conf
