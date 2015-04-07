@@ -272,10 +272,7 @@ class EyeFiSession(object):
         """
         Return a random 32 digit hexadecimal value as a string
         """
-        result = ''
-        for ite in range(8):
-            result += "%04x" % (0xffff * random.random())
-        return result
+        return '%032x' % random.randint(0, 16**32)
 
     @staticmethod
     def _hexmd5(plain):
