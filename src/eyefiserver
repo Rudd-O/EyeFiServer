@@ -30,6 +30,8 @@ class included with Python. I look for specific POST/GET request URLs and
 execute functions based on those URLs.
 """
 
+from __future__ import division
+
 import argparse
 import array
 import BaseHTTPServer
@@ -130,7 +132,7 @@ class IntegrityDigestFile(file):
         # For each pair of bytes, cast them into a 2 byte integer (unsigned
         # short).
         # Compute using little-endian (which is what the '<' sign if for)
-        for ushort in struct.unpack('<' + 'H' * (len(buf)/2), buf):
+        for ushort in struct.unpack('<' + 'H' * (len(buf)//2), buf):
             # Add them all up
             sum_of_shorts = sum_of_shorts + int(ushort)
 
@@ -596,20 +598,20 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
 
             if datetime.utcnow() - speedtest_starttime > PROGRESS_FREQUENCY:
                 elapsed_time = datetime.utcnow() - speedtest_starttime
-
                 elapsed_seconds = (
                     elapsed_time.days * 86400
                     + elapsed_time.seconds
-                    + elapsed_time.microseconds / 1000000.)
-
-                speed = (received_length-speedtest_startsize)/elapsed_seconds*8
+                    + elapsed_time.microseconds / 1000000)
+                speed = (
+                    8 * (received_length-speedtest_startsize)
+                    // elapsed_seconds)
                 eyeFiLogger.debug(
                     "%s: Read %s / %s bytes (%02.02f%%) %d kbps",
                     soapdata['filename'],
                     received_length,
                     content_length,
-                    received_length * 100. / content_length,
-                    speed/1000
+                    received_length * 100 / content_length,
+                    speed//1000
                     )
 
                 speedtest_starttime = datetime.utcnow()
