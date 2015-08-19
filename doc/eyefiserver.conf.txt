@@ -84,7 +84,7 @@ use_date_from_file
 
        Default is Off.
 correct_mtime  
-       This is only usefull is you activated use_date_from_file. This can be On
+       This is only useful is you activated use_date_from_file. This can be On
        or Off.
 
        EyeFi puts local timestamp into its tarfile instead UTC, so extracted
