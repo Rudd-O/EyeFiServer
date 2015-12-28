@@ -10,14 +10,14 @@ sections are the MAC address of the Eye-Fi card. The mac address must be in
 lower case and without dashes. For example, if your card has a MAC address
 00-18-56-50-EF-F9, the section should be named [00185650eff9].
 
-All keys described bellow are searched first in the section specific to the
+All keys described below are searched first in the section specific to the
 Eye-Fi card, then, if not found, it is search in the global [EyeFiServer]
 section. This means you can set up a global default value, then override it
 for a few specific cards.
 
 You don't need card specific section at all if you have only one Eye-Fi card.
 
-There is only one compulsory key, the upload_key. See bellow.
+There is only one compulsory key, the upload_key. See below.
 
 KEYS
 
