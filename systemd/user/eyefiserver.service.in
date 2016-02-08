@@ -1,0 +1,10 @@
+[Unit]
+Description=EyeFi Server
+Documentation=man:eyefiserver.conf(5)
+
+[Service]
+Type=simple
+ExecStart=@BINDIR@/eyefiserver --conf=%h/.config/eyefiserver.conf
+
+[Install]
+WantedBy=default.target

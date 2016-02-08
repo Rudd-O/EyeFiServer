@@ -2,3 +2,6 @@
 *.pyo
 doc/*.1
 doc/*.5
+*.gz
+*.swp
+*.rpm
