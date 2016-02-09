@@ -796,6 +796,21 @@ class EyeFiConfig(RawConfigParser):
     """
     Helper wraper around ConfigParser.RawConfigParser
     Provides get() method with fallback to a global section and default values
+
+    All configuration settings can be keyed to the MAC address of the
+    Eye-Fi device (as a section of the INI file), and if the section
+    does not exist, then the section 'EyeFiServer' is consulted for
+    the configuration values.  If that fals, then most config values
+    default to sensible defaults.
+
+    List of config settings:
+      config.getuploaddir                       defaults to ~/eyefi
+      config.get upload_key                     mandatory
+      config.get progress_execute               defaults to nothing
+      config.get complete_execute               defaults to nothing
+      config.getboolean correct_mtime           defaults to True
+      config.getboolean use_date_from_file      defaults to False
+      config.getboolean integrity_verification  defaults to True
     """
     def __init__(self, conffiles):
         RawConfigParser.__init__(self)
