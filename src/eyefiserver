@@ -884,13 +884,15 @@ def main():
         action='append', dest='conffiles',
         help='specific alternate location for configuration file. '
              'default=%(default)s',
-        default=['/etc/eyefiserver.conf',
-                 os.path.expanduser('~/eyefiserver.conf')])
+        default=[])
     parser.add_argument(
         '--log', metavar='LOGFILE',
         dest='logfile',
         help='log to file')
     options = parser.parse_args()
+    if not options.conffiles:
+        options.conffiles = ['/etc/eyefiserver.conf',
+                             os.path.expanduser('~/eyefiserver.conf')]
 
     # Create two handlers. One to print to the log and one to print to the
     # console
