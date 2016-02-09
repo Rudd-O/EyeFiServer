@@ -4,9 +4,11 @@ SYSCONFDIR=/etc
 INITDDIR=/etc/init.d
 DESKTOPDIR=/usr/share/applications
 USERUNITDIR=/usr/lib/systemd/user
+UNITDIR=/usr/lib/systemd/system
+UPLOADDIR=~/eyefi/%Y/%Y%m%d
 DESTDIR=
 
-all: doc/eyefiserver.1.gz doc/eyefiserver.conf.5.gz systemd/user/eyefiserver.service desktop/eyefiserver-prefs.desktop
+all: doc/eyefiserver.1.gz doc/eyefiserver.conf.5.gz etc/eyefiserver.conf systemd/system/eyefiserver.service systemd/user/eyefiserver.service desktop/eyefiserver-prefs.desktop
 
 dist: clean
 	DIR=EyeFiServer-`awk '/^Version:/ {print $$2}' rpm/eyefiserver.spec` && FILENAME=$$DIR.tar.gz && tar cvzf "$$FILENAME" --exclude "$$FILENAME" --exclude .git --exclude .gitignore -X .gitignore --transform="s|^|$$DIR/|" --show-transformed *
@@ -19,6 +21,7 @@ install: all
 	install -Dm 755 src/eyefiserver-prefs -t $(DESTDIR)/$(BINDIR)/
 	install -Dm 644 etc/eyefiserver.conf -t $(DESTDIR)/$(SYSCONFDIR)/
 	install -Dm 644 desktop/eyefiserver-prefs.desktop -t $(DESTDIR)/$(DESKTOPDIR)/
+	install -Dm 644 systemd/system/eyefiserver.service -t $(DESTDIR)/$(UNITDIR)/
 	install -Dm 644 systemd/user/eyefiserver.service -t $(DESTDIR)/$(USERUNITDIR)/
 	install -Dm 755 etc/init.d/eyefiserver -t $(DESTDIR)/$(INITDDIR)/
 	install -Dm 644 doc/eyefiserver.1.gz -t $(DESTDIR)/$(MANDIR)/man1/
@@ -35,11 +38,17 @@ doc/eyefiserver.conf.5.gz: doc/eyefiserver.txt
 systemd/user/eyefiserver.service: systemd/user/eyefiserver.service.in
 	sed 's|@BINDIR@|$(BINDIR)|g' < $< > $@
 
+systemd/system/eyefiserver.service: systemd/system/eyefiserver.service.in
+	sed -e 's|@BINDIR@|$(BINDIR)|g' -e 's|@SYSCONFDIR@|$(SYSCONFDIR)|g' < $< > $@
+
+etc/eyefiserver.conf: etc/eyefiserver.conf.in
+	sed 's|@UPLOADDIR@|$(UPLOADDIR)|g' < $< > $@
+
 desktop/eyefiserver-prefs.desktop: desktop/eyefiserver-prefs.desktop.in
 	sed 's|@BINDIR@|$(BINDIR)|g' < $< > $@
 
 clean:
-	rm -f doc/*.gz systemd/user/eyefiserver.service desktop/eyefiserver-prefs.desktop
+	rm -f doc/*.gz etc/eyefiserver.conf systemd/system/eyefiserver.service systemd/user/eyefiserver.service desktop/eyefiserver-prefs.desktop
 
 gitclean:
 	LANG=C git status | grep -q 'orking directory clean' && { git clean -fxd ; } || { git status ; read -p "Some of these changes will be lost.  Hit ENTER to confirm, Ctrl+C to cancel. " ; git clean -fxd ; }

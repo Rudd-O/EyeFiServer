@@ -26,7 +26,7 @@ loglevel=INFO
 #
 # daemon user need write access.
 
-upload_dir=~/eyefi/%Y/%Y%m%d
+upload_dir=@UPLOADDIR@
 
 
 # Do we use the date of the transfer or the date of the file in the camera?
