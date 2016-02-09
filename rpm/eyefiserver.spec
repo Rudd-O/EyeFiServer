@@ -10,7 +10,7 @@ License:        GPLv3+
 URL:            https://github.com/nirgal/EyeFiServer
 Source0:	Source0: https://github.com/shiinee/%{name}/archive/{%version}.tar.gz#/%{name}-%{version}.tar.gz
 
-#BuildRequires:  txt2man
+BuildRequires:  txt2man
 BuildArch:	noarch
 Requires:       python2, gobject-introspection, gtk3, pygobject3
 
