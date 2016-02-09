@@ -27,9 +27,9 @@ import sys
 
 def get_documents_dir():
     try:
-        d = subprocess.check_output(["xdg-user-dir", "DOCUMENTS"]).rstrip("\n")
+        d = subprocess.check_output(["xdg-user-dir", "PICTURES"]).rstrip("\n")
     except Exception:
-        d = os.path.expanduser("~/Documents")
+        d = os.path.expanduser("~/Pictures")
     return d
 
 
