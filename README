@@ -1,49 +1,66 @@
-This is eyefiserver version 2.4 +github snapshoot
+This is an improved version of EyeFiServer, a program that receives
+photos from your Eye-Fi card in your camera.
 
-INSTALLATION
-------------
-Structure of this package :
+INSTALLATION OF THE SOFTWARE
+----------------------------
 
-        .
-        |-- etc/
-        |   |-- eyefiserver.conf
-        |   `-- init.d/
-        |       `-- eyefiserver
-        |-- usr/
-            `-- local/
-                |-- bin/
-                |   `-- eyefiserver
-                `-- share/
-                    \-- man/
-                        |-- man1/
-                        |   `-- eyefiserver.1
-                        `-- man5/
-                            `-- eyefiserver.conf.5
+You have two options:
 
-If you're familiar with linux, that basically sums it up :-)
-
-You need to copy the files in the right place.
-
-Optionally add stuff to your start-stop sequence. On debian/ubuntu, use
-update-rc.d:
-    sudo update-rc.d eyefiserver defaults
-
-et voilà.
+* Fedora / Red Hat systems: `make rpm` in the source directory, then
+  install (`rpm -Uvh`) the resulting `noarch` RPM in said directory.
+* Others: `make install`.  See the `Makefile` for control options.
 
 
 CONFIGURATION
 -------------
-To use this script you need to have your Eye-Fi "upload key".
-You can find it after configuring the card, which you can currently on do only
-on Windows or Mac:
+
+You have two options.  You can run the server as part of your regular user
+session (started automatically when you log in), or you can run it every
+time your computer starts.  The first option is what we call a *user session*
+setup, and the second one is a *system wide* setup.
+
+For the user session setup, all you have to do is run *Eye-Fi preferences*
+right from your preferred desktop environment.  If it doesn't appear in the
+menus, then you can run the program `eyefiserver-prefs` and it will let you
+set up your computer to receive photos from your Eye-Fi whenever you are
+logged into your computer.
+
+For the system session setup:
+
+* If you are using the RPM installation (described above), you need to add
+  your upload key to `/etc/eyefiserver.conf`, then enable and restart the
+  `eyefiserver.service` service unit.  You can see the log in real-time
+  using `journalctl -fa`.  Instructions on how to retrieve the upload key
+  from your Windows or Mac OS X system are below.
+* If you are *not* using the RPM installation (that is, you installed using
+  `make` or by manually copying files to their right locations), then
+  you need to set up:
+  * the initscript by hand,
+  * the permissions on the `/etc/eyefiserver.conf` configuration file,
+  * the contents of that file,
+  * the creation of the upload directory, and its permissions.
+
+
+THE INFAMOUS UPLOAD KEY
+-----------------------
+
+To retrieve the upload key, you need to pair your Eye-Fi with the
+Eye-Fi Center (which you can currently on do only
+on Windows or Mac).  Do not enable Relayed Transfer during the
+pairing process.
+
+Once the pairing process is done, you must retrieve the key:
 
 On Windows:
  See C:\Documents and Settings\<User>\Application Data\Eye-Fi\Settings.xml
 On Mac:
  See ~/Applications Data/Eye-Fi/Settings.xml
 
-You must search for it and paste it in eyefiserver.conf. Then server needs to be
-reloaded after editing that file.
+If you are doing a *user session* setup, you can supply the key to the
+preferences program `eyefiserver-prefs`.  If you are doing a *system wide*
+setup, then you must search for `upload_key` in `/etc/eyefiserver.conf`
+and then paste the key there.  Of course, the server needs to be
+restarted after editing that file.
 
 See manual for a full description of options.
 
