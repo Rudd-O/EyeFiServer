@@ -11,7 +11,7 @@ Source0:	Source0: https://github.com/shiinee/%{name}/archive/{%version}.tar.gz#/
 
 BuildRequires:  txt2man
 BuildArch:	noarch
-Requires:       python2
+Requires:       python2, gobject-introspection, gtk3, pygobject3
 
 %description
 eyefiserver is a daemon that accepts connections and receives files from Eye-Fi
