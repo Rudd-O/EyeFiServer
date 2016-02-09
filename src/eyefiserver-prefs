@@ -33,15 +33,19 @@ def get_documents_dir():
     return d
 
 
-def systemd_service_enabled(svc):
+def systemd_boolean_query(query, svc):
     try:
         d = subprocess.check_output(["systemctl", "--user",
-                                    "is-enabled", svc])
+                                     query, svc])
         return True
     except subprocess.CalledProcessError as e:
         if e.returncode == 1:
             return False
         raise
+
+
+systemd_service_enabled = functools.partial(systemd_boolean_query, "is-enabled")
+systemd_service_running = functools.partial(systemd_boolean_query, "is-active")
 
 
 def systemd_action(action, svc):
@@ -272,6 +276,7 @@ class EyeFiConfigExpert(ConfigParser.RawConfigParser):
         upload_key = self.get_or_none(sec, "upload_key")
         download_folder = self.get_or_none(sec, "upload_dir")
         enabled = systemd_service_enabled(self.service)
+        running = systemd_service_running(self.service)
 
         changed = False
         if upload_key != new_upload_key:
@@ -293,7 +298,7 @@ class EyeFiConfigExpert(ConfigParser.RawConfigParser):
 
         if new_enabled:
             systemd_enable_service(self.service)
-            if changed or new_enabled != enabled:
+            if changed or new_enabled != enabled or not running:
                 systemd_restart_service(self.service)
         else:
             systemd_stop_service(self.service)
