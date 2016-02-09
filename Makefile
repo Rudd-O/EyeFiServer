@@ -41,4 +41,7 @@ desktop/eyefiserver-prefs.desktop: desktop/eyefiserver-prefs.desktop.in
 clean:
 	rm -f doc/*.gz systemd/user/eyefiserver.service desktop/eyefiserver-prefs.desktop
 
+gitclean:
+	LANG=C git status | grep -q 'orking directory clean' && { git clean -fxd ; } || { git status ; read -p "Some of these changes will be lost.  Hit ENTER to confirm, Ctrl+C to cancel. " ; git clean -fxd ; }
+
 .PHONY: install clean
