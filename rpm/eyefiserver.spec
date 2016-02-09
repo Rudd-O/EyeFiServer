@@ -26,13 +26,16 @@ make
 %install
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT BINDIR=%{_bindir} SYSCONFDIR=%{_sysconfdir} \
-INITDDIR=%{_initddir} MANDIR=%{_mandir} USERUNITDIR=%{_userunitdir}
+INITDDIR=%{_initddir} MANDIR=%{_mandir} USERUNITDIR=%{_userunitdir} \
+DESKTOPDIR=%{_datadir}/applications \
+
 rm -rf $RPM_BUILD_ROOT/%{_initddir}/
 
 %files
 %{_bindir}/eyefiserver*
 %config(noreplace) %{_sysconfdir}/eyefiserver.conf
 %{_userunitdir}/*.service
+%{_datadir}/applications/*.desktop
 %{_mandir}/man?/*.gz
 
 %doc doc/* LICENSE README changelog

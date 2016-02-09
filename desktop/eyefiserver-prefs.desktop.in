@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Eye-Fi preferences
+Exec=@BINDIR@/eyefiserver-prefs
+Icon=application-x-executable
+Terminal=false
+TryExec=@BINDIR@/eyefiserver-prefs
+Type=Application
+Categories=Settings;X-GNOME-SystemSettings;
+X-AppInstall-Keywords=eyefi

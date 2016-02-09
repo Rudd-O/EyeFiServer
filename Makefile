@@ -2,10 +2,11 @@ BINDIR=/usr/bin
 MANDIR=/usr/share/man
 SYSCONFDIR=/etc
 INITDDIR=/etc/init.d
+DESKTOPDIR=/usr/share/applications
 USERUNITDIR=/usr/lib/systemd/user
 DESTDIR=
 
-all: doc/eyefiserver.1.gz doc/eyefiserver.conf.5.gz systemd/user/eyefiserver.service
+all: doc/eyefiserver.1.gz doc/eyefiserver.conf.5.gz systemd/user/eyefiserver.service desktop/eyefiserver-prefs.desktop
 
 dist: clean
 	DIR=EyeFiServer-`awk '/^Version:/ {print $$2}' rpm/eyefiserver.spec` && FILENAME=$$DIR.tar.gz && tar cvzf "$$FILENAME" --exclude "$$FILENAME" --exclude .git --exclude .gitignore -X .gitignore --transform=s/^\./$$DIR/ --show-transformed .
@@ -17,6 +18,7 @@ install: all
 	install -Dm 755 src/eyefiserver -t $(DESTDIR)/$(BINDIR)/
 	install -Dm 755 src/eyefiserver-prefs -t $(DESTDIR)/$(BINDIR)/
 	install -Dm 644 etc/eyefiserver.conf -t $(DESTDIR)/$(SYSCONFDIR)/
+	install -Dm 644 desktop/eyefiserver-prefs.desktop -t $(DESTDIR)/$(DESKTOPDIR)/
 	install -Dm 644 systemd/user/eyefiserver.service -t $(DESTDIR)/$(USERUNITDIR)/
 	install -Dm 755 etc/init.d/eyefiserver -t $(DESTDIR)/$(INITDDIR)/
 	install -Dm 644 doc/eyefiserver.1.gz -t $(DESTDIR)/$(MANDIR)/man1/
@@ -33,7 +35,10 @@ doc/eyefiserver.conf.5.gz: doc/eyefiserver.txt
 systemd/user/eyefiserver.service: systemd/user/eyefiserver.service.in
 	sed 's|@BINDIR@|$(BINDIR)|g' < $< > $@
 
+desktop/eyefiserver-prefs.desktop: desktop/eyefiserver-prefs.desktop.in
+	sed 's|@BINDIR@|$(BINDIR)|g' < $< > $@
+
 clean:
-	rm -f doc/*.gz systemd/user/eyefiserver.service
+	rm -f doc/*.gz systemd/user/eyefiserver.service desktop/eyefiserver-prefs.desktop
 
 .PHONY: install clean
