@@ -9,7 +9,7 @@ DESTDIR=
 all: doc/eyefiserver.1.gz doc/eyefiserver.conf.5.gz systemd/user/eyefiserver.service desktop/eyefiserver-prefs.desktop
 
 dist: clean
-	DIR=EyeFiServer-`awk '/^Version:/ {print $$2}' rpm/eyefiserver.spec` && FILENAME=$$DIR.tar.gz && tar cvzf "$$FILENAME" --exclude "$$FILENAME" --exclude .git --exclude .gitignore -X .gitignore --transform=s/^\./$$DIR/ --show-transformed .
+	DIR=EyeFiServer-`awk '/^Version:/ {print $$2}' rpm/eyefiserver.spec` && FILENAME=$$DIR.tar.gz && tar cvzf "$$FILENAME" --exclude "$$FILENAME" --exclude .git --exclude .gitignore -X .gitignore --transform="s|^|$$DIR/|" --show-transformed *
 
 rpm: dist
 	T=`mktemp -d` && rpmbuild --define "_topdir $$T" -ta EyeFiServer-`awk '/^Version:/ {print $$2}' rpm/eyefiserver.spec`.tar.gz || { rm -rf "$$T"; exit 1; } && mv "$$T"/RPMS/noarch/* "$$T"/SRPMS/* . || { rm -rf "$$T"; exit 1; } && rm -rf "$$T"
