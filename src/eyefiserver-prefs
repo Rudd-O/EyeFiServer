@@ -25,6 +25,9 @@ import subprocess
 import sys
 
 
+DEFAULT_PORT = 59278
+
+
 def get_documents_dir():
     try:
         d = subprocess.check_output(["xdg-user-dir", "PICTURES"]).rstrip("\n")
@@ -33,13 +36,17 @@ def get_documents_dir():
     return d
 
 
+def systemd_daemon_reload():
+    d = subprocess.check_output(["systemctl", "--user", "daemon-reload"])
+
+
 def systemd_boolean_query(query, svc):
     try:
         d = subprocess.check_output(["systemctl", "--user",
                                      query, svc])
         return True
     except subprocess.CalledProcessError as e:
-        if e.returncode == 1:
+        if e.returncode in (1, 3):
             return False
         raise
 
@@ -53,8 +60,8 @@ def systemd_action(action, svc):
                            action, svc], stderr=subprocess.STDOUT)
 
 
-systemd_disable_service = functools.partial(systemd_action, "disable")
 systemd_enable_service = functools.partial(systemd_action, "enable")
+systemd_disable_service = functools.partial(systemd_action, "disable")
 systemd_stop_service = functools.partial(systemd_action, "stop")
 systemd_restart_service = functools.partial(systemd_action, "restart")
 systemd_start_service = functools.partial(systemd_action, "start")
@@ -119,14 +126,13 @@ class EyeFiServerPrefsWindow(Gtk.Window):
         self.config_expert = config_expert
         Gtk.Window.__init__(self, title="Eye-Fi server preferences")
         self.set_border_width(12)
-        self.set_default_size(400,-1)
 
         grid = Gtk.Grid()
         grid.set_column_spacing(8)
         grid.set_row_spacing(8)
         self.add(grid)
 
-        self.enable = Gtk.CheckButton("Fetch photos from Eye-Fi card")
+        self.enable = Gtk.CheckButton("Receive photos from Eye-Fi card")
         grid.attach(self.enable, 0, 0, 1, 1)
         self.connect("delete-event", self.exit_requested)
 
@@ -140,12 +146,21 @@ class EyeFiServerPrefsWindow(Gtk.Window):
         subgrid.set_vexpand(True)
         grid.attach(subgrid, 0, 1, 1, 1)
 
-        label = Gtk.Label()
-        label.set_markup("<i>Obtain the required upload key from your Windows or Mac OS X Eye-Fi center configuration.</i>")
-        label.set_line_wrap(True)
-        label.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR)
-        label.set_xalign(0.0)
-        subgrid.attach(label, 0, 0, 2, 1)
+        strings = [
+            ("• Pair your Eye-Fi card with your (Windows"
+             " or Mac OS X) Eye-Fi Center."),
+            "• Ensure you disable Relayed Transfer as you pair your Eye-Fi card.",
+            "• Then transfer the upload key here from the Eye-Fi settings file:",
+            "   • Windows: <i>C:\\Users\\&lt;user&gt;\\Application Data\\Eye-Fi\\Settings.xml</i>",
+            "   • Mac OS X: <i>~/Applications Data/Eye-Fi/Settings.xml</i>",
+        ]
+        vbox = Gtk.VBox()
+        for string in strings:
+            label = Gtk.Label()
+            label.set_markup(string)
+            label.set_xalign(0.0)
+            vbox.add(label)
+        subgrid.attach(vbox, 0, 0, 2, 1)
 
         label = Gtk.Label("Use upload key")
         label.set_xalign(0.0)
@@ -155,7 +170,7 @@ class EyeFiServerPrefsWindow(Gtk.Window):
         self.upload_key.set_hexpand(True)
         subgrid.attach(self.upload_key, 1, 1, 1, 1)
 
-        label = Gtk.Label("Save photos in")
+        label = Gtk.Label("Save photos to")
         label.set_xalign(0.0)
         subgrid.attach(label, 0, 2, 1, 1)
         self.download_folder = Gtk.FileChooserButton()
@@ -164,6 +179,18 @@ class EyeFiServerPrefsWindow(Gtk.Window):
         self.download_folder.set_action(Gtk.FileChooserAction.SELECT_FOLDER)
         self.download_folder.set_hexpand(True)
         subgrid.attach(self.download_folder, 1, 2, 1, 1)
+
+        label = Gtk.Label()
+        label.set_markup(
+            "If your computer has a firewall, now is a good time to open"
+            " TCP port %s in your firewall setup.  Eye-Fi will send your"
+            " photos to that port." % DEFAULT_PORT
+        )
+        label.set_line_wrap(True)
+        label.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR)
+        label.set_xalign(0.0)
+        label.do_get_preferred_width = lambda: (100, 100)
+        subgrid.attach(label, 0, 3, 2, 1)
 
         button_box = Gtk.ButtonBox()
         grid.attach(button_box, 0, 2, 1, 1)
@@ -179,6 +206,8 @@ class EyeFiServerPrefsWindow(Gtk.Window):
         self.apply_button.grab_default()
         self.apply_button.connect("clicked", self.apply_)
         GObject.idle_add(self.load_)
+
+        self.set_default_size(520, -1)
 
     def get_download_folder(self):
         filename = self.download_folder.get_filename()
@@ -275,6 +304,7 @@ class EyeFiConfigExpert(ConfigParser.RawConfigParser):
 
         upload_key = self.get_or_none(sec, "upload_key")
         download_folder = self.get_or_none(sec, "upload_dir")
+        systemd_daemon_reload()
         enabled = systemd_service_enabled(self.service)
         running = systemd_service_running(self.service)
 
