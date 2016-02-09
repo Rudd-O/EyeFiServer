@@ -1,0 +1,312 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+#
+# This is the user service configurator of EyeFiServer.
+#
+#  Copyright (c) 2016 Skyler Leigh
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+import ConfigParser
+import contextlib
+import functools
+import gi ; gi.require_version("Gtk", "3.0")
+from gi.repository import GObject, Gtk, Pango
+import os
+import subprocess
+import sys
+
+
+def get_documents_dir():
+    try:
+        d = subprocess.check_output(["xdg-user-dir", "DOCUMENTS"]).rstrip("\n")
+    except Exception:
+        d = os.path.expanduser("~/Documents")
+    return d
+
+
+def systemd_service_enabled(svc):
+    try:
+        d = subprocess.check_output(["systemctl", "--user",
+                                    "is-enabled", svc])
+        return True
+    except subprocess.CalledProcessError as e:
+        if e.returncode == 1:
+            return False
+        raise
+
+
+def systemd_action(action, svc):
+    subprocess.check_output(["systemctl", "--user",
+                           action, svc], stderr=subprocess.STDOUT)
+
+
+systemd_disable_service = functools.partial(systemd_action, "disable")
+systemd_enable_service = functools.partial(systemd_action, "enable")
+systemd_stop_service = functools.partial(systemd_action, "stop")
+systemd_restart_service = functools.partial(systemd_action, "restart")
+systemd_start_service = functools.partial(systemd_action, "start")
+
+
+def create_dirs(path):
+    dirs = []
+    last_path = None
+    while last_path != path:
+        head, tail = os.path.split(path)
+        dirs.append(path)
+        last_path = path
+        path = head
+    dirs.reverse()
+    created_dirs = []
+    for d in dirs:
+        if not os.path.isdir(d):
+            try:
+                os.mkdir(d)
+                created_dirs.append(d)
+            except (IOError, OSError):
+                break
+    created_dirs.reverse()
+    return created_dirs
+
+
+def remove_dirs(dirlist):
+    for d in dirlist:
+        try:
+            os.rmdir(d)
+        except (IOError, OSError):
+            break
+
+
+@contextlib.contextmanager
+def phantom_directory(directory):
+    created_dirs = create_dirs(directory)
+    try:
+        yield directory
+    finally:
+        remove_dirs(created_dirs)
+
+
+def FatalError(message, secondary=None, outside_mainloop=False, parent=None):
+    d = Gtk.MessageDialog(
+        parent,
+        Gtk.DialogFlags.DESTROY_WITH_PARENT,
+        Gtk.MessageType.ERROR,
+        Gtk.ButtonsType.CLOSE,
+        message,
+    )
+    if secondary:
+        d.format_secondary_text(secondary)
+    d.run()
+
+
+class EyeFiServerPrefsWindow(Gtk.Window):
+
+    returncode = 0
+
+    def __init__(self, config_expert):
+        self.config_expert = config_expert
+        Gtk.Window.__init__(self, title="Eye-Fi server preferences")
+        self.set_border_width(12)
+        self.set_default_size(400,-1)
+
+        grid = Gtk.Grid()
+        grid.set_column_spacing(8)
+        grid.set_row_spacing(8)
+        self.add(grid)
+
+        self.enable = Gtk.CheckButton("Fetch photos from Eye-Fi card")
+        grid.attach(self.enable, 0, 0, 1, 1)
+        self.connect("delete-event", self.exit_requested)
+
+        subgrid = Gtk.Grid()
+        self.enable.connect("toggled", lambda *_: subgrid.set_sensitive(self.enable.get_active()))
+        self.enable.connect("toggled", self.calculate_validation)
+        subgrid.set_sensitive(self.enable.get_active())
+        subgrid.set_column_spacing(8)
+        subgrid.set_row_spacing(12)
+        subgrid.set_margin_left(12)
+        subgrid.set_vexpand(True)
+        grid.attach(subgrid, 0, 1, 1, 1)
+
+        label = Gtk.Label()
+        label.set_markup("<i>Obtain the required upload key from your Windows or Mac OS X Eye-Fi center configuration.</i>")
+        label.set_line_wrap(True)
+        label.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR)
+        label.set_xalign(0.0)
+        subgrid.attach(label, 0, 0, 2, 1)
+
+        label = Gtk.Label("Use upload key")
+        label.set_xalign(0.0)
+        subgrid.attach(label, 0, 1, 1, 1)
+        self.upload_key = Gtk.Entry()
+        self.upload_key.connect("changed", self.calculate_validation)
+        self.upload_key.set_hexpand(True)
+        subgrid.attach(self.upload_key, 1, 1, 1, 1)
+
+        label = Gtk.Label("Save photos in")
+        label.set_xalign(0.0)
+        subgrid.attach(label, 0, 2, 1, 1)
+        self.download_folder = Gtk.FileChooserButton()
+        self.download_folder.connect("file-set", self.calculate_validation)
+        self.download_folder.set_title("Select Eye-Fi download folder")
+        self.download_folder.set_action(Gtk.FileChooserAction.SELECT_FOLDER)
+        self.download_folder.set_hexpand(True)
+        subgrid.attach(self.download_folder, 1, 2, 1, 1)
+
+        button_box = Gtk.ButtonBox()
+        grid.attach(button_box, 0, 2, 1, 1)
+        button_box.set_layout(Gtk.ButtonBoxStyle.END)
+        button_box.set_spacing(12)
+        button_box.set_hexpand(True)
+        self.cancel_button = Gtk.Button(stock=Gtk.STOCK_CANCEL)
+        button_box.add(self.cancel_button)
+        self.cancel_button.connect("clicked", self.exit_requested)
+        self.apply_button = Gtk.Button(stock=Gtk.STOCK_APPLY)
+        button_box.add(self.apply_button)
+        self.apply_button.set_can_default(True)
+        self.apply_button.grab_default()
+        self.apply_button.connect("clicked", self.apply_)
+        GObject.idle_add(self.load_)
+
+    def get_download_folder(self):
+        filename = self.download_folder.get_filename()
+        return filename if filename else None
+
+    def get_upload_key(self):
+        text = self.upload_key.get_text().strip()
+        return text if text else None
+
+    def get_enabled(self):
+        return self.enable.get_active()
+
+    def calculate_validation(self, *unused_args):
+        if (
+            (self.get_upload_key() and self.get_download_folder()) or
+            not self.get_enabled()
+        ):
+            self.apply_button.set_sensitive(True)
+        else:
+            self.apply_button.set_sensitive(False)
+
+    def load_(self):
+        enabled, upload_key, download_folder = self.config_expert.load_settings()
+        self.enable.set_active(enabled)
+        self.upload_key.set_text('' if upload_key is None else upload_key)
+        if download_folder:
+            with phantom_directory(download_folder):
+                self.download_folder.set_filename(download_folder)
+        self.calculate_validation()
+
+    def apply_(self, *ignored_args):
+        try:
+            self.config_expert.save_and_activate_settings(
+                self.get_enabled(),
+                self.get_upload_key(),
+                self.get_download_folder(),
+            )
+        except subprocess.CalledProcessError as e:
+            FatalError(
+                "Cannot apply settings",
+                "An error took place applying the state of the Eye-Fi service: %s" % e.output,
+                parent=self,
+            )
+            self.returncode = e.returncode
+        self.exit_requested()
+
+    def exit_requested(self, *ignored_args):
+        Gtk.main_quit()
+
+
+class EyeFiConfigExpert(ConfigParser.RawConfigParser):
+
+    config_file = os.path.expanduser("~/.config/eyefiserver.conf")
+    service = "eyefiserver.service"
+
+    def set_or_del(self, section, option, value):
+        if value is not None:
+            return self.set(section, option, value)
+        if self.has_option(section, option):
+            return self.remove_option(section, option)
+
+    def get_or_default(self, section, option, default=None):
+        if self.has_option(section, option):
+            return self.get(section, option)
+        return default
+
+    def get_or_none(self, section, option):
+        return self.get_or_default(section, option)
+
+    def load_defaults(self):
+        return None, os.path.join(get_documents_dir(), "Eye-Fi")
+
+    def load_settings(self):
+        upload_key, download_folder = self.load_defaults()
+
+        sec = "EyeFiServer"
+        self.read([self.config_file])
+
+        if not self.has_section(sec):
+            self.add_section(sec)
+
+        upload_key = self.get_or_default(sec, "upload_key", upload_key)
+        download_folder = self.get_or_default(sec, "upload_dir", download_folder)
+
+        enabled = systemd_service_enabled("eyefiserver.service")
+
+        return enabled, upload_key, download_folder
+
+    def save_and_activate_settings(self,
+                                   new_enabled,
+                                   new_upload_key,
+                                   new_download_folder):
+        sec = "EyeFiServer"
+
+        upload_key = self.get_or_none(sec, "upload_key")
+        download_folder = self.get_or_none(sec, "upload_dir")
+        enabled = systemd_service_enabled(self.service)
+
+        changed = False
+        if upload_key != new_upload_key:
+            changed = True
+            self.set_or_del(sec, "upload_key", new_upload_key)
+        if download_folder != new_download_folder:
+            changed = True
+            self.set_or_del(sec, "upload_dir", new_download_folder)
+
+        if changed:
+            old_umask = os.umask(0077)
+            try:
+                cfg = open(self.config_file, "wb")
+                self.write(cfg)
+                cfg.flush()
+                cfg.close()
+            finally:
+                os.umask(old_umask)
+
+        if new_enabled:
+            systemd_enable_service(self.service)
+            if changed or new_enabled != enabled:
+                systemd_restart_service(self.service)
+        else:
+            systemd_stop_service(self.service)
+            systemd_disable_service(self.service)
+
+
+def main():
+    config_expert = EyeFiConfigExpert()
+    app = EyeFiServerPrefsWindow(config_expert)
+    GObject.idle_add(app.show_all)
+    Gtk.main()
+    return app.returncode
+
+
+if __name__ == "__main__":
+    sys.exit(main())

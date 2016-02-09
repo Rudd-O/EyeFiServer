@@ -15,6 +15,7 @@ rpm: dist
 
 install: all
 	install -Dm 755 src/eyefiserver -t $(DESTDIR)/$(BINDIR)/
+	install -Dm 755 src/eyefiserver-prefs -t $(DESTDIR)/$(BINDIR)/
 	install -Dm 644 etc/eyefiserver.conf -t $(DESTDIR)/$(SYSCONFDIR)/
 	install -Dm 644 systemd/user/eyefiserver.service -t $(DESTDIR)/$(USERUNITDIR)/
 	install -Dm 755 etc/init.d/eyefiserver -t $(DESTDIR)/$(INITDDIR)/

@@ -30,7 +30,7 @@ INITDDIR=%{_initddir} MANDIR=%{_mandir} USERUNITDIR=%{_userunitdir}
 rm -rf $RPM_BUILD_ROOT/%{_initddir}/
 
 %files
-%{_bindir}/eyefiserver
+%{_bindir}/eyefiserver*
 %config(noreplace) %{_sysconfdir}/eyefiserver.conf
 %{_userunitdir}/*.service
 %{_mandir}/man?/*.gz
